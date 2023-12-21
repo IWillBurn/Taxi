@@ -2,9 +2,9 @@ FROM golang:1.19-alpine as builder
 
 RUN apk add --no-cache git
 
-WORKDIR /trip_service
+WORKDIR /test
 
-COPY /trip_service .
+COPY /test .
 
 RUN go mod download
 

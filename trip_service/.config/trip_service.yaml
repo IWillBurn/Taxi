@@ -1,0 +1,13 @@
+app:
+  debug: true
+  shutdown_timeout: 20s
+database:
+  dsn: postgres://
+  migrations_dir: "file://../../migrations/trip_service"
+connection:
+  inbound :
+    topic : "trip_inbound"
+    brokers : ["kafka:9092"]
+  outbound :
+     topic : "trip_outbound"
+     brokers :  ["kafka:9092"]
