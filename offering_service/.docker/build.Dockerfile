@@ -12,7 +12,7 @@ RUN go mod download
 COPY internal ./internal
 COPY cmd ./cmd
 
-WORKDIR /app/cmd/offering_service
+WORKDIR /app/cmd
 
 RUN go build -o app
 

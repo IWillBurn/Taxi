@@ -1,0 +1,8 @@
+app:
+  debug: true
+  shutdown_timeout: 22s
+http:
+  serve_address: localhost:8080
+  base_path: /
+singing:
+  secret_key: qwerty
