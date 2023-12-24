@@ -55,8 +55,18 @@ services:
       - init-kafka
       - zookeeper
   build:
+    image: builder:latest
+    build:
+      context: "."
+      dockerfile: "trip_service/.docker/build.Dockerfile"
+
+  trip_service:
     build:
       context: "."
       dockerfile: "trip_service/.docker/trip_service.Dockerfile"
+    restart: unless-stopped
     depends_on:
-      - kafka-ui
+      build:
+        condition: service_completed_successfully
+      init-kafka:
+        condition: service_completed_successfully
