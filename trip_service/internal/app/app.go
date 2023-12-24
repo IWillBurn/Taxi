@@ -11,6 +11,7 @@ import (
 	"trip_service/internal/app/config"
 	"trip_service/internal/app/service"
 	"trip_service/internal/connection"
+	"trip_service/internal/repository"
 )
 
 type App struct {
@@ -19,17 +20,27 @@ type App struct {
 	tripService *service.TripService
 }
 
-func NewApp(config *config.Config) *App {
+func NewApp(ctx context.Context, config *config.Config) *App {
+	//Create topics by docker-compose
+	//topic.CreateTopic(ctx, config.Connection.Inbound.Brokers, kafka.TopicConfig{
+	//	Topic: config.Connection.Inbound.Topic,
+	//})
+	//topic.CreateTopic(ctx, config.Connection.Outbound.Brokers, kafka.TopicConfig{
+	//	Topic: config.Connection.Outbound.Topic,
+	//})
+	log.Println("topic created")
+	appConnection := connection.NewConnection(
+		&kafka.ReaderConfig{
+			Topic:   config.Connection.Inbound.Topic,
+			Brokers: config.Connection.Inbound.Brokers,
+		}, &kafka.WriterConfig{
+			Topic:   config.Connection.Outbound.Topic,
+			Brokers: config.Connection.Outbound.Brokers,
+		})
 	return &App{
-		config: config,
-		connection: connection.NewConnection(
-			&kafka.ReaderConfig{
-				Topic:   config.Connection.Inbound.Topic,
-				Brokers: config.Connection.Inbound.Brokers,
-			}, &kafka.WriterConfig{
-				Topic:   config.Connection.Outbound.Topic,
-				Brokers: config.Connection.Outbound.Brokers,
-			}),
+		config:      config,
+		connection:  appConnection,
+		tripService: service.NewService(repository.NewRepository(), appConnection),
 	}
 }
 func (app *App) Run(ctx context.Context) error {
@@ -38,7 +49,7 @@ func (app *App) Run(ctx context.Context) error {
 	signal.Notify(done, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		if err := app.connection.Serve(ctx); err != nil {
+		if err := app.tripService.Serve(ctx); err != nil {
 			log.Fatal("Error on start server", zap.Error(err))
 		}
 	}()
@@ -57,6 +68,6 @@ func (app *App) Shutdown() error {
 	_, cancel := context.WithTimeout(context.Background(), app.config.App.ShutdownTimeout)
 	defer cancel()
 
-	err := app.connection.Close()
+	err := app.tripService.Shutdown()
 	return err
 }

@@ -1,42 +1,79 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"log"
+	"trip_service/internal/connection"
 	"trip_service/internal/model"
 )
 
 type TripService struct {
-	repo *TripRepository
+	repo       *model.TripRepository
+	connection *connection.Connection
+}
+
+func (service *TripService) acceptTrip(message []byte) {
+	var responseMessage model.AcceptTrip
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Accept Trip")
+
+}
+func (service *TripService) cancelTrip(message []byte) {
+	var responseMessage model.CancelTrip
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func (service *TripService) creatTrip(message []byte) {
+	var responseMessage model.CreatTrip
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func (service *TripService) endTrip(message []byte) {
+	var responseMessage model.EndTrip
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func (service *TripService) startTrip(message []byte) {
+	var responseMessage model.StartTrip
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func NewService(
-	repo *TripRepository,
-) *TripService {
-	return &TripService{
-		repo: repo,
+	repo model.TripRepository,
+	connection *connection.Connection) *TripService {
+
+	service := &TripService{
+		repo:       &repo,
+		connection: connection,
 	}
+	connection.AddHandler("trip.command.accept", service.acceptTrip)
+	connection.AddHandler("trip.command.cancel", service.cancelTrip)
+	connection.AddHandler("trip.command.creat", service.creatTrip)
+	connection.AddHandler("trip.command.end", service.endTrip)
+	connection.AddHandler("trip.command.start", service.startTrip)
+	return service
 }
-
-func (s *TripService) AcceptTrip(msg model.AcceptTrip) {
-	log.Println("TEST Accept trip", msg)
+func (service *TripService) Serve(ctx context.Context) error {
+	err := service.connection.Serve(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
-func (s *TripService) CreatTrip(msg model.CreatTrip)   {}
-func (s *TripService) CancelTrip(msg model.CancelTrip) {}
-func (s *TripService) EndTrip(msg model.EndTrip)       {}
-func (s *TripService) StartTrip(msg model.StartTrip)   {}
-
-//func (s *TripService) getTrip(ctx context.Context, id int32) (*models.Trip, error) {
-//
-//	return s.repo.GetTrip(ctx, id)
-//}
-//
-//func (s *TripService) updateTrip(ctx context.Context, id int32) error {
-//	return s.repo.UpdateTrip(ctx, id)
-//}
-//func (s *TripService) deleteTrip(ctx context.Context, id int32) error {
-//	return s.repo.DeleteTrip(ctx, id)
-//}
-//
-//func (s *TripService) getClientTrips(ctx context.Context, clientId int32) (*models.Trips, error) {
-//	return s.repo.GetClientTrips(ctx, clientId)
-//}
+func (service *TripService) Shutdown() error {
+	return service.connection.Close()
+}

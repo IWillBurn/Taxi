@@ -2,6 +2,7 @@ package config
 
 import (
 	"gopkg.in/yaml.v2"
+	"log"
 	"os"
 	"time"
 )
@@ -38,6 +39,7 @@ func NewConfig(filePath string) (*Config, error) {
 	}
 	var cfg Config
 	err = yaml.Unmarshal(data, &cfg)
+	log.Println(cfg)
 	if err != nil {
 		return nil, err
 	}

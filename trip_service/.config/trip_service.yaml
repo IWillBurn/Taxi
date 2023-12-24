@@ -7,7 +7,7 @@ database:
 connection:
   inbound :
     topic : "trip_inbound"
-    brokers : ["kafka:9092"]
+    brokers : ["kafka:29092"]
   outbound :
      topic : "trip_outbound"
-     brokers :  ["kafka:9092"]
+     brokers :  ["kafka:29092"]
