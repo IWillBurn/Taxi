@@ -19,7 +19,12 @@ type EventCancelTrip struct {
 }
 
 type EventCreatTrip struct {
-	OfferID string `json:"offer_id"`
+	TripID  string        `json:"trip_id"`
+	OfferID string        `json:"offer_id"`
+	Price   Price         `json:"price"`
+	Status  string        `json:"status"`
+	From    LatLngLiteral `json:"from"`
+	To      LatLngLiteral `json:"to"`
 }
 
 type EventStartTrip struct {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -93,7 +94,7 @@ func (service *TripService) createTrip(message []byte) {
 			OfferId:      responseMessage.OfferID,
 			CurrentStage: "CREATED",
 		})
-	resp, err := http.Get("https://httpbin.org/get")
+	resp, err := http.Get(fmt.Sprintf("http://offering:8080/offers/%s", responseMessage.OfferID))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -102,16 +103,25 @@ func (service *TripService) createTrip(message []byte) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	var offer model.Offer
+	err = json.Unmarshal(body, &offer)
 
-	log.Println(string(body))
+	if err != nil {
+		log.Fatalln(err)
+	}
 	err = service.connection.Write(context.Background(), []byte(tripId+"CREATED"), model.OutboundMessage{
-		ID:              tripId,
+		ID:              offer.Id,
 		Source:          "/trip",
-		Type:            "trip.event.canceled",
+		Type:            "trip.event.created",
 		DataContentType: "application/json",
 		Time:            time.Now().Format(time.RFC3339),
 		Data: model.EventCreatTrip{
+			TripID:  tripId,
 			OfferID: responseMessage.OfferID,
+			Price:   offer.Price,
+			Status:  "CREATED",
+			From:    offer.From,
+			To:      offer.To,
 		},
 	})
 	if err != nil {
