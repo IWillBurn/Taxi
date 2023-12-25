@@ -60,11 +60,6 @@ func New(config *config.Config) (App, error) {
 
 	DataBaseController := &repo.MongoDB{Config: &config.Mongo}
 	go DataBaseController.Serve()
-	tripService := &service.DefaultTripService{
-		KafkaController:     nil,
-		OfferingServiceHost: "",
-		DataBaseController:  DataBaseController,
-	}
 
 	connection := kafkacontroller.NewConnection(
 		&kafka.ReaderConfig{
@@ -78,6 +73,13 @@ func New(config *config.Config) (App, error) {
 
 	kafkaController := kafkacontroller.NewService(connection)
 	go kafkaController.Serve(context.Background())
+
+	tripService := &service.DefaultTripService{
+		KafkaController:     kafkaController,
+		OfferingServiceHost: "http://offering:8081",
+		DataBaseController:  DataBaseController,
+		Client:              http.Client{},
+	}
 
 	socketController, _ := socketlistener.NewSocketController(&config.Socket, tripService)
 	a := &app{

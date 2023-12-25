@@ -7,6 +7,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - 22181:2181
+    networks:
+      - hub
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -23,6 +25,9 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    networks:
+      - hub
+
   init-kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -54,6 +59,9 @@ services:
       - kafka
       - init-kafka
       - zookeeper
+    networks:
+      - hub
+
   build_trip:
     image: builder:latest
     build:
@@ -75,6 +83,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hub
 
   trip_service:
     build:
@@ -90,6 +100,8 @@ services:
         condition: service_healthy
     volumes:
       - './trip_service/migrations/:/migrations'
+    networks:
+      - hub
 
   build_client:
     image: build:develop
@@ -111,6 +123,8 @@ services:
       - './client_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
       - "8080:8080"
+    networks:
+      - hub
 
   mongodb:
     image: mongo
@@ -122,6 +136,9 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin
     volumes:
       - ./data:/data/db
+    networks:
+      - hub
+
   build_offer:
     image: build:develop
     build:
@@ -140,3 +157,10 @@ services:
       - './offering_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
       - "8081:8080"
+    networks:
+      - hub
+
+
+networks:
+  hub:
+    driver: bridge
