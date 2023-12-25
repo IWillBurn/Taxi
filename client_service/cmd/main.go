@@ -1,10 +1,10 @@
 package main
 
 import (
+	"client_service/internal/app"
+	"client_service/internal/config"
 	"flag"
 	"fmt"
-	"offering_service/internal/app"
-	"offering_service/internal/config"
 )
 
 func getConfigPath() string {

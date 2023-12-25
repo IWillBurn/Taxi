@@ -1,6 +1,6 @@
 package responses
 
-import "offering_service/internal/models"
+import "client_service/internal/models"
 
 type OfferResponse struct {
 	Id       string               `json:"id"`

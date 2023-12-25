@@ -8,10 +8,13 @@ import (
 )
 
 const (
-	AppName                = "offering"
-	DefaultServeAddress    = "localhost:63342"
-	DefaultShutdownTimeout = 20 * time.Second
-	DefaultBasePath        = "/"
+	AppName                   = "offering"
+	DefaultServeAddress       = "localhost:32434"
+	DefaultShutdownTimeout    = 20 * time.Second
+	DefaultBasePath           = "/"
+	DefaultSocketPath         = "/"
+	DefaultSocketServeAddress = "localhost:53242"
+	DefaultURI                = "mongodb://localhost:27017"
 )
 
 type AppConfig struct {
@@ -20,18 +23,41 @@ type AppConfig struct {
 }
 
 type HttpAdapterConfig struct {
-	ServeAddress string `yaml:"serve_address"`
-	BasePath     string `yaml:"base_path"`
+	ServeAddress    string `yaml:"serve_address"`
+	BasePath        string `yaml:"base_path"`
+	OfferingAddress string `yaml:"offering_address"`
+}
+
+type SocketConfig struct {
+	ServeAddress string `yaml:"socket_serve_address"`
+	BasePath     string `yaml:"socket_path"`
+}
+
+type InboundConfig struct {
+	Topic   string   `yaml:"topic"`
+	Brokers []string `yaml:"brokers"`
+}
+
+type OutboundConfig struct {
+	Topic   string   `yaml:"topic"`
+	Brokers []string `yaml:"brokers"`
+}
+
+type ConnectionConfig struct {
+	Inbound  InboundConfig  `yaml:"inbound"`
+	Outbound OutboundConfig `yaml:"outbound"`
 }
 
 type MongoConfig struct {
-	Key string `yaml:"secret_key"`
+	URI string `yaml:"uri"`
 }
 
 type Config struct {
-	App   AppConfig         `yaml:"app"`
-	HTTP  HttpAdapterConfig `yaml:"http"`
-	Mongo MongoConfig       `yaml:"mongo"`
+	App        AppConfig         `yaml:"app"`
+	HTTP       HttpAdapterConfig `yaml:"http"`
+	Socket     SocketConfig      `yaml:"socket"`
+	Mongo      MongoConfig       `yaml:"mongo"`
+	Connection ConnectionConfig  `yaml:"connection"`
 }
 
 func NewConfig(fileName string) (*Config, error) {
@@ -49,6 +75,17 @@ func NewConfig(fileName string) (*Config, error) {
 			ServeAddress: DefaultServeAddress,
 			BasePath:     DefaultBasePath,
 		},
+		Socket: SocketConfig{
+			ServeAddress: DefaultSocketServeAddress,
+			BasePath:     DefaultSocketPath,
+		},
+		Mongo: MongoConfig{
+			URI: DefaultURI,
+		},
+		Connection: ConnectionConfig{
+			Inbound:  InboundConfig{},
+			Outbound: OutboundConfig{},
+		},
 	}
 
 	if err := yaml.Unmarshal(data, &cnf); err != nil {
@@ -57,3 +94,25 @@ func NewConfig(fileName string) (*Config, error) {
 
 	return &cnf, nil
 }
+
+/*
+func DefaultConfig() (*Config, error) {
+	cnf := Config{
+		App: AppConfig{
+			ShutdownTimeout: DefaultShutdownTimeout,
+		},
+		HTTP: HttpAdapterConfig{
+			ServeAddress: DefaultServeAddress,
+			BasePath:     DefaultBasePath,
+		},
+		Socket: SocketConfig{
+			ServeAddress: DefaultSocketServeAddress,
+			BasePath:     DefaultSocketPath,
+		},
+		Mongo: MongoConfig{
+			URI: DefaultURI,
+		},
+	}
+	return &cnf, nil
+}
+*/

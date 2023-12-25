@@ -1,9 +1,11 @@
 package service
 
-import "offering_service/internal/socketlistener"
+import (
+	"client_service/internal/socketlistener/publishers"
+)
 
 type TripService interface {
-	CreateTrip(string, string) error
-	CancelTrip(string, string) error
-	GetTripStatus(string, string, *socketlistener.Publisher) error
+	CreateTrip(offerId string) error
+	CancelTrip(tripId string, reason string) error
+	GetTripStatus(clientId string, TripId string, publisher *publishers.Publisher) error
 }

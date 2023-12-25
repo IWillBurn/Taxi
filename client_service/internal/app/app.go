@@ -1,21 +1,28 @@
 package app
 
 import (
+	"client_service/internal/config"
+	"client_service/internal/httpadapter"
+	"client_service/internal/kafkacontroller"
+	"client_service/internal/repo"
+	"client_service/internal/service"
+	"client_service/internal/socketlistener"
 	"context"
+	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
-	"offering_service/internal/config"
-	"offering_service/internal/httpadapter"
-	"offering_service/internal/service"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 type app struct {
-	config *config.Config
-
-	httpAdapter *httpadapter.Adapter
+	config             *config.Config
+	dataBaseController repo.DataBaseController
+	tripService        service.TripService
+	socketController   *socketlistener.SocketController
+	httpAdapter        *httpadapter.Adapter
+	kafkaController    *kafkacontroller.KafkaController
 }
 
 func (a *app) Serve() error {
@@ -25,6 +32,12 @@ func (a *app) Serve() error {
 
 	go func() {
 		if err := a.httpAdapter.Serve(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err.Error())
+		}
+	}()
+
+	go func() {
+		if err := a.socketController.Serve(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(err.Error())
 		}
 	}()
@@ -45,14 +58,41 @@ func (a *app) Shutdown() {
 
 func New(config *config.Config) (App, error) {
 
-	offeringService := &service.LinearOfferingService{LinearCost: 1, BaseCost: 100, PlanetRadius: 6370}
-	signingService := &service.JWTSigningService{Key: config.Singing.Key}
+	DataBaseController := &repo.MongoDB{Config: &config.Mongo}
+	err := DataBaseController.Serve()
+	if err != nil {
+		return nil, err
+	}
+	tripService := &service.DefaultTripService{
+		KafkaController:     nil,
+		OfferingServiceHost: "",
+		DataBaseController:  DataBaseController,
+	}
 
+	connection := kafkacontroller.NewConnection(
+		&kafka.ReaderConfig{
+			Topic:   config.Connection.Inbound.Topic,
+			Brokers: config.Connection.Inbound.Brokers,
+		},
+		&kafka.WriterConfig{
+			Topic:   config.Connection.Outbound.Topic,
+			Brokers: config.Connection.Outbound.Brokers,
+		})
+
+	kafkaController := kafkacontroller.NewService(connection)
+	err = kafkaController.Serve(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	socketController, _ := socketlistener.NewSocketController(&config.Socket, tripService)
 	a := &app{
-		config:          config,
-		offeringService: offeringService,
-		signingService:  signingService,
-		httpAdapter:     httpadapter.New(&config.HTTP, offeringService, signingService),
+		config:             config,
+		dataBaseController: DataBaseController,
+		tripService:        tripService,
+		socketController:   socketController,
+		httpAdapter:        httpadapter.New(&config.HTTP, DataBaseController, tripService),
+		kafkaController:    kafkaController,
 	}
 
 	return a, nil

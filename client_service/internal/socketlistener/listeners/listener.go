@@ -1,4 +1,4 @@
-package socketlistener
+package listeners
 
 type Listener interface {
 	HandleMessages()

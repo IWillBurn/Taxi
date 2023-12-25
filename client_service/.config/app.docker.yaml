@@ -4,5 +4,16 @@ app:
 http:
   serve_address: :8080
   base_path: /
-singing:
-  secret_key: secret_key
+  offering_address: "offering:8080"
+socket:
+  serve_address: :54321
+  base_path: /
+mongo:
+  uri: mongodb://admin:admin@mongodb:27017/?authSource=admin
+connection:
+  inbound :
+    topic : "trip_inbound"
+    brokers : ["kafka:29092"]
+  outbound :
+    topic : "trip_outbound"
+    brokers :  ["kafka:29092"]
