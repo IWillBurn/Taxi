@@ -40,7 +40,6 @@ func NewConnection(readerConfig *kafka.ReaderConfig, writerConfig *kafka.WriterC
 }
 
 func (connection *Connection) Serve(ctx context.Context) error {
-	log.Print("start reading")
 	for {
 		msg, err := connection.Read(ctx)
 		if err != nil {

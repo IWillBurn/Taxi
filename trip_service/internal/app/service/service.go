@@ -181,6 +181,7 @@ func NewService(
 	connection.AddHandler("trip.command.create", service.createTrip)
 	connection.AddHandler("trip.command.end", service.endTrip)
 	connection.AddHandler("trip.command.start", service.startTrip)
+
 	return service
 }
 func (service *TripService) Serve(ctx context.Context) error {
