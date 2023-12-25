@@ -59,10 +59,7 @@ func (a *app) Shutdown() {
 func New(config *config.Config) (App, error) {
 
 	DataBaseController := &repo.MongoDB{Config: &config.Mongo}
-	err := DataBaseController.Serve()
-	if err != nil {
-		return nil, err
-	}
+	go DataBaseController.Serve()
 	tripService := &service.DefaultTripService{
 		KafkaController:     nil,
 		OfferingServiceHost: "",
@@ -80,10 +77,7 @@ func New(config *config.Config) (App, error) {
 		})
 
 	kafkaController := kafkacontroller.NewService(connection)
-	err = kafkaController.Serve(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	go kafkaController.Serve(context.Background())
 
 	socketController, _ := socketlistener.NewSocketController(&config.Socket, tripService)
 	a := &app{
