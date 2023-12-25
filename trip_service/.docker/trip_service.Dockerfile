@@ -1,7 +1,7 @@
-FROM alpine
+FROM alpine:latest
 
-WORKDIR /app
+COPY --from=builder /trip_service/main .
+COPY --from=builder /trip_service/.config .
+COPY --from=builder /trip_service/test .
 
-COPY --from=build:develop /app/cmd/trip_service/app ./app
-
-CMD ["/app/app", "-c", "config.yaml"]
+CMD ["./main", "-c", "./trip_service.yaml"]

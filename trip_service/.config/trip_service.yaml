@@ -1,0 +1,13 @@
+app:
+  debug: true
+  shutdown_timeout: 20s
+database:
+  dsn: "postgres://postgres:postgres@database:5432/trips?sslmode=disable"
+  migrations_dir: "migrations"
+connection:
+  inbound :
+    topic : "trip_inbound"
+    brokers : ["kafka:29092"]
+  outbound :
+     topic : "trip_outbound"
+     brokers :  ["kafka:29092"]

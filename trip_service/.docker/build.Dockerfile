@@ -1,18 +1,11 @@
-FROM golang:1.17.8-alpine
+FROM golang:1.19-alpine as builder
 
 RUN apk add --no-cache git
 
-WORKDIR /app
+WORKDIR /trip_service
 
-COPY go.mod .
-COPY go.sum .
+COPY /trip_service .
 
-RUN go mod download
 
-COPY internal ./internal
-COPY cmd ./cmd
-
-WORKDIR /app/cmd/trip_service
-
-RUN go build -o app
-
+RUN --mount=type=cache,mode=0755,target=/go/pkg/mod go mod vendor
+RUN go build ./cmd/main.go
