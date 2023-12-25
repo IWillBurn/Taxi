@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"time"
 	"trip_service/internal/connection"
 	"trip_service/internal/model"
@@ -91,7 +93,17 @@ func (service *TripService) createTrip(message []byte) {
 			OfferId:      responseMessage.OfferID,
 			CurrentStage: "CREATED",
 		})
-	//TODO send other information
+	resp, err := http.Get("https://httpbin.org/get")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println(string(body))
 	err = service.connection.Write(context.Background(), []byte(tripId+"CREATED"), model.OutboundMessage{
 		ID:              tripId,
 		Source:          "/trip",

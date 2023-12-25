@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.1"
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -54,11 +54,12 @@ services:
       - kafka
       - init-kafka
       - zookeeper
-  build:
+  build_trip:
     image: builder:latest
     build:
       context: "."
       dockerfile: "trip_service/.docker/build.Dockerfile"
+
 
   database:
     image: postgres
@@ -81,7 +82,7 @@ services:
       dockerfile: "./trip_service/.docker/trip_service.Dockerfile"
     restart: unless-stopped
     depends_on:
-      build:
+      build_trip:
         condition: service_completed_successfully
       init-kafka:
         condition: service_completed_successfully
@@ -90,3 +91,52 @@ services:
     volumes:
       - './trip_service/migrations/:/migrations'
 
+  build_client:
+    image: build:develop
+    build:
+      context: "./client_service"
+      dockerfile: "./.docker/build.Dockerfile"
+
+  client:
+    build:
+      context: "./client_service"
+      dockerfile: "./.docker/app.Dockerfile"
+    restart: unless-stopped
+    depends_on:
+      build_client:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_started
+    volumes:
+      - './client_service/.config/app.docker.yaml:/app/config.yaml'
+    ports:
+      - "8080:8080"
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - ./data:/data/db
+  build_offer:
+    image: build:develop
+    build:
+      context: "./offering_service"
+      dockerfile: "./.docker/build.Dockerfile"
+
+  offering:
+    build:
+      context: "./offering_service"
+      dockerfile: "./.docker/app.Dockerfile"
+    restart: unless-stopped
+    depends_on:
+      build_offer:
+        condition: service_completed_successfully
+    volumes:
+      - './offering_service/.config/app.docker.yaml:/app/config.yaml'
+    ports:
+      - "8081:8080"
