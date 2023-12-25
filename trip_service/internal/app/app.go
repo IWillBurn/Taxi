@@ -2,6 +2,10 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 	"log"
@@ -20,6 +24,8 @@ type App struct {
 	tripService *service.TripService
 }
 
+const driverName = "postgres"
+
 func NewApp(ctx context.Context, config *config.Config) *App {
 	//Create topics by docker-compose
 	//topic.CreateTopic(ctx, config.Connection.Inbound.Brokers, kafka.TopicConfig{
@@ -37,12 +43,45 @@ func NewApp(ctx context.Context, config *config.Config) *App {
 			Topic:   config.Connection.Outbound.Topic,
 			Brokers: config.Connection.Outbound.Brokers,
 		})
+
+	db, err := initDB(ctx, &config.Database)
+	if err != nil {
+		log.Fatal("Problem with init database ", err)
+	}
+	appRepo := repository.NewRepository(db)
+
 	return &App{
 		config:      config,
 		connection:  appConnection,
-		tripService: service.NewService(repository.NewRepository(), appConnection),
+		tripService: service.NewService(appRepo, appConnection),
 	}
 }
+
+func initDB(ctx context.Context, config *config.DatabaseConfig) (*sqlx.DB, error) {
+	db, err := sqlx.Open(driverName, config.DSN)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
+	}
+
+	if err = db.PingContext(ctx); err != nil {
+		return nil, err
+	}
+
+	// migrations
+	fs := os.DirFS(config.MigrationsDir)
+	goose.SetBaseFS(fs)
+
+	if err = goose.SetDialect(driverName); err != nil {
+		panic(err)
+	}
+
+	if err = goose.UpContext(ctx, db.DB, "."); err != nil {
+		panic(err)
+	}
+
+	return db, nil
+}
+
 func (app *App) Run(ctx context.Context) error {
 	done := make(chan os.Signal, 1)
 

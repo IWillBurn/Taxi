@@ -2,8 +2,8 @@ app:
   debug: true
   shutdown_timeout: 20s
 database:
-  dsn: postgres://
-  migrations_dir: "file://../../migrations/trip_service"
+  dsn: "postgres://postgres:postgres@database:5432/trips?sslmode=disable"
+  migrations_dir: "migrations"
 connection:
   inbound :
     topic : "trip_inbound"

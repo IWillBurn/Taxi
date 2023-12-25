@@ -60,13 +60,33 @@ services:
       context: "."
       dockerfile: "trip_service/.docker/build.Dockerfile"
 
+  database:
+    image: postgres
+    restart: always
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_DB: trips
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   trip_service:
     build:
       context: "."
-      dockerfile: "trip_service/.docker/trip_service.Dockerfile"
+      dockerfile: "./trip_service/.docker/trip_service.Dockerfile"
     restart: unless-stopped
     depends_on:
       build:
         condition: service_completed_successfully
       init-kafka:
         condition: service_completed_successfully
+      database:
+        condition: service_healthy
+    volumes:
+      - './trip_service/migrations/:/migrations'
+

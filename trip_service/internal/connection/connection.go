@@ -18,8 +18,9 @@ type Connection struct {
 func (connection *Connection) AddHandler(contentType string, reducer func([]byte)) {
 	connection.handlers[contentType] = reducer
 }
-func (connection *Connection) handle(contentType string, message []byte) {
-	function, exist := connection.handlers[contentType]
+func (connection *Connection) handle(Type string, message []byte) {
+	function, exist := connection.handlers[Type]
+	log.Println(Type)
 	if exist {
 		function(message)
 	} else {

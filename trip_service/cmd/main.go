@@ -34,7 +34,7 @@ func main() {
 	done := make(chan os.Signal, 1)
 
 	signal.Notify(done, syscall.SIGTERM, syscall.SIGINT)
-	acceptTrip, err := os.ReadFile("./accept_trip.json")
+	create_trip, err := os.ReadFile("./create_trip.json")
 	go func() {
 		index := 200
 		writer := kafka.NewWriter(kafka.WriterConfig{
@@ -44,7 +44,7 @@ func main() {
 
 		defer writer.Close()
 		for {
-			err = writer.WriteMessages(context.Background(), kafka.Message{Key: []byte(strconv.Itoa(index)), Value: acceptTrip})
+			err = writer.WriteMessages(context.Background(), kafka.Message{Key: []byte(strconv.Itoa(index)), Value: create_trip})
 			if err != nil {
 				log.Println("Problem with writing message ", err)
 			}
