@@ -140,11 +140,6 @@ func (MongoDB *MongoDB) Serve() error {
 		log.Fatal(err)
 		return err
 	}
-
-	defer func() {
-		if err = client.Disconnect(context.Background()); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	
 	return nil
 }

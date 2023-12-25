@@ -59,7 +59,10 @@ func (a *app) Shutdown() {
 func New(config *config.Config) (App, error) {
 
 	DataBaseController := &repo.MongoDB{Config: &config.Mongo}
-	go DataBaseController.Serve()
+	err := DataBaseController.Serve()
+	if err != nil {
+		return nil, err
+	}
 
 	connection := kafkacontroller.NewConnection(
 		&kafka.ReaderConfig{
@@ -76,7 +79,7 @@ func New(config *config.Config) (App, error) {
 
 	tripService := &service.DefaultTripService{
 		KafkaController:     kafkaController,
-		OfferingServiceHost: "http://offering:8081",
+		OfferingServiceHost: config.HTTP.OfferingAddress,
 		DataBaseController:  DataBaseController,
 		Client:              http.Client{},
 	}

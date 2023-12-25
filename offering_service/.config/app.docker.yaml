@@ -2,7 +2,7 @@ app:
   debug: true
   shutdown_timeout: 22s
 http:
-  serve_address: :8080
+  serve_address: :9090
   base_path: /
 singing:
   secret_key: secret_key

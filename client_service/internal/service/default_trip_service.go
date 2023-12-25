@@ -25,7 +25,7 @@ type DefaultTripService struct {
 
 func (tripService *DefaultTripService) CreateTrip(offerId string) error {
 	id := uuid.New().String()
-	go tripService.KafkaController.Connection.Write(context.Background(), []byte(id),
+	err := tripService.KafkaController.Connection.Write(context.Background(), []byte(id),
 		models.OutboundMessage{
 			Id:              id,
 			Source:          "/client",
@@ -36,7 +36,10 @@ func (tripService *DefaultTripService) CreateTrip(offerId string) error {
 				OfferId: offerId,
 			},
 		})
-
+	if err != nil {
+		return err
+	}
+	log.Println(tripService.OfferingServiceHost + "/offers/" + offerId)
 	resp, err := tripService.Client.Get(tripService.OfferingServiceHost + "/offers/" + offerId)
 	if err != nil {
 		return err
@@ -61,7 +64,7 @@ func (tripService *DefaultTripService) CreateTrip(offerId string) error {
 		Price:    response.Price,
 		Status:   "",
 	}
-
+	log.Println(response)
 	err = (tripService.DataBaseController).AddTrip(trip)
 	if err != nil {
 		return err

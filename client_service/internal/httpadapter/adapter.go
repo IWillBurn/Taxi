@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 )
 
@@ -50,7 +51,8 @@ func (a *Adapter) CreateTrip(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	log.Printf("OK!")
+	w.WriteHeader(200)
 	return
 }
 

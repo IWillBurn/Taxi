@@ -59,13 +59,6 @@ services:
       - zookeeper
 
 
-  build_trip:
-    image: builder:latest
-    build:
-      context: "."
-      dockerfile: "trip_service/.docker/build.Dockerfile"
-
-
   database:
     image: postgres
     restart: always
@@ -82,6 +75,24 @@ services:
       retries: 5
 
 
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - ./data:/data/db
+
+
+  build_trip:
+    image: builder:latest
+    build:
+      context: "."
+      dockerfile: "trip_service/.docker/build.Dockerfile"
+
   trip_service:
     build:
       context: "."
@@ -96,7 +107,6 @@ services:
         condition: service_healthy
     volumes:
       - './trip_service/migrations/:/migrations'
-
 
   build_client:
     image: build:develop
@@ -120,23 +130,14 @@ services:
       - "8080:8080"
 
 
-  mongodb:
-    image: mongo
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-    volumes:
-      - ./data:/data/db
-
-
   build_offer:
     image: build:develop
     build:
       context: "./offering_service"
       dockerfile: "./.docker/build.Dockerfile"
+    depends_on:
+      client:
+        condition: service_started
 
   offering:
     build:
@@ -149,4 +150,4 @@ services:
     volumes:
       - './offering_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
-      - "8081:8080"
+      - "9090:9090"
