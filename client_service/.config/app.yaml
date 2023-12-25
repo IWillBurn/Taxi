@@ -4,7 +4,7 @@ app:
 http:
   serve_address: localhost:8080
   base_path: /
-  offering_address: "offering:8080"
+  offering_address: "offering:8081"
 socket:
   serve_address: :54321
   base_path: /
