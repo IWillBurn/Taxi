@@ -4,6 +4,7 @@ import (
 	"client_service/internal/config"
 	"client_service/internal/httpadapter"
 	"client_service/internal/kafkacontroller"
+	"client_service/internal/metrics"
 	"client_service/internal/repo"
 	"client_service/internal/service"
 	"client_service/internal/socketlistener"
@@ -85,7 +86,7 @@ func New(config *config.Config) (App, error) {
 		dataBaseController: DataBaseController,
 		tripService:        tripService,
 		socketController:   socketController,
-		httpAdapter:        httpadapter.New(&config.HTTP, DataBaseController, tripService),
+		httpAdapter:        httpadapter.New(&config.HTTP, DataBaseController, tripService, metrics.NewMetrics()),
 		kafkaController:    kafkaController,
 	}
 

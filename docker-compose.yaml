@@ -8,6 +8,7 @@ services:
     ports:
       - 22181:2181
 
+
   kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -23,6 +24,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+
   init-kafka:
     image: confluentinc/cp-kafka:latest
     depends_on:
@@ -54,11 +57,14 @@ services:
       - kafka
       - init-kafka
       - zookeeper
-  build:
+
+
+  build_trip:
     image: builder:latest
     build:
       context: "."
       dockerfile: "trip_service/.docker/build.Dockerfile"
+
 
   database:
     image: postgres
@@ -75,13 +81,14 @@ services:
       timeout: 5s
       retries: 5
 
+
   trip_service:
     build:
       context: "."
       dockerfile: "./trip_service/.docker/trip_service.Dockerfile"
     restart: unless-stopped
     depends_on:
-      build:
+      build_trip:
         condition: service_completed_successfully
       init-kafka:
         condition: service_completed_successfully
@@ -90,3 +97,76 @@ services:
     volumes:
       - './trip_service/migrations/:/migrations'
 
+
+  build_client:
+    image: build:develop
+    build:
+      context: "./client_service"
+      dockerfile: "./.docker/build.Dockerfile"
+
+  client:
+    build:
+      context: "./client_service"
+      dockerfile: "./.docker/app.Dockerfile"
+    restart: unless-stopped
+    depends_on:
+      build_client:
+        condition: service_completed_successfully
+      mongodb:
+        condition: service_started
+    volumes:
+      - './client_service/.config/app.docker.yaml:/app/config.yaml'
+    ports:
+      - "8080:8080"
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - ./data:/data/db
+
+
+  build_offer:
+    image: build:develop
+    build:
+      context: "./offering_service"
+      dockerfile: "./.docker/build.Dockerfile"
+
+  offering:
+    build:
+      context: "./offering_service"
+      dockerfile: "./.docker/app.Dockerfile"
+    restart: unless-stopped
+    depends_on:
+      build_offer:
+        condition: service_completed_successfully
+    volumes:
+      - './offering_service/.config/app.docker.yaml:/app/config.yaml'
+    ports:
+      - "8081:8080"
+  prometheus:
+    image: prom/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./deployments/prometheus:/etc/prometheus
+      - prom_data:/deployments/prometheus
+  grafana:
+    image: grafana/grafana
+    ports:
+        - 8083:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./deployments/grafana:/etc/grafana/provisioning/datasources
+volumes:
+  prom_data:

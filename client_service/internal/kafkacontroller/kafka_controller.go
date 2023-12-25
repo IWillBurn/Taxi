@@ -1,6 +1,7 @@
 package kafkacontroller
 
 import (
+	"client_service/internal/metrics"
 	"client_service/internal/models"
 	"client_service/internal/repo"
 	"client_service/internal/socketlistener/publishers"
@@ -13,6 +14,8 @@ type KafkaController struct {
 	repo            repo.DataBaseController
 	statusPublisher *publishers.Publisher
 	Connection      *Connection
+
+	metrics *metrics.Metrics
 }
 
 func (kafkaController *KafkaController) updateStatus(message []byte, status string) {
@@ -35,9 +38,24 @@ func (kafkaController *KafkaController) updateStatus(message []byte, status stri
 }
 
 func (kafkaController *KafkaController) acceptTrip(message []byte) {
+	kafkaController.metrics.InTheQueueCounter.Dec()
 	kafkaController.updateStatus(message, "DRIVER_FOUND")
 }
 func (kafkaController *KafkaController) cancelTrip(message []byte) {
+	kafkaController.metrics.CanceledTripCounter.Inc()
+
+	var responseMessage models.EventTripStatusUpdate
+	err := json.Unmarshal(message, &responseMessage)
+	if err != nil {
+		log.Fatal(err)
+	}
+	trip, err := kafkaController.repo.GetTripByTripId(responseMessage.TripId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if trip.Status == "DRIVER_SEARCH" {
+		kafkaController.metrics.InTheQueueCounter.Dec()
+	}
 	kafkaController.updateStatus(message, "CANCELED")
 }
 func (kafkaController *KafkaController) createTrip(message []byte) {
@@ -61,12 +79,14 @@ func (kafkaController *KafkaController) createTrip(message []byte) {
 	}
 	data := make(map[string]string)
 	data["status"] = responseMessage.Status
+	kafkaController.metrics.CreatedOrdersCounter.Inc()
 	kafkaController.statusPublisher.Publish(trip.ClientId, data)
 }
 func (kafkaController *KafkaController) startTrip(message []byte) {
 	kafkaController.updateStatus(message, "STARTED")
 }
 func (kafkaController *KafkaController) endTrip(message []byte) {
+	kafkaController.metrics.EndedTripCounter.Inc()
 	kafkaController.updateStatus(message, "ENDED")
 }
 
@@ -82,6 +102,7 @@ func NewService(connection *Connection) *KafkaController {
 	return k
 }
 func (kafkaController *KafkaController) Serve(ctx context.Context) error {
+	kafkaController.metrics.Serve()
 	err := kafkaController.Connection.Serve(ctx)
 	if err != nil {
 		return err
