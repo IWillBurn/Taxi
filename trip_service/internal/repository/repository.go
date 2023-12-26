@@ -72,7 +72,6 @@ func (repo *Repository) CreateStarted(ctx context.Context, trip *model.TripStart
 	if err = row.Scan(&id); err != nil {
 		return "", err
 	}
-
 	return id, nil
 }
 func (repo *Repository) DeleteStarted(ctx context.Context, params *model.ParamsStarted) error {

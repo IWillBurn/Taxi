@@ -12,16 +12,16 @@ import (
 type Connection struct {
 	reader   *kafka.Reader
 	writer   *kafka.Writer
-	handlers map[string]func([]byte)
+	handlers map[string]func([]byte, string)
 }
 
-func (connection *Connection) AddHandler(contentType string, reducer func([]byte)) {
+func (connection *Connection) AddHandler(contentType string, reducer func([]byte, string)) {
 	connection.handlers[contentType] = reducer
 }
-func (connection *Connection) handle(contentType string, message []byte) {
+func (connection *Connection) handle(contentType string, id string, message []byte) {
 	function, exist := connection.handlers[contentType]
 	if exist {
-		function(message)
+		function(message, id)
 	} else {
 		log.Println("Nothing to handle")
 	}
@@ -32,7 +32,7 @@ func NewConnection(readerConfig *kafka.ReaderConfig, writerConfig *kafka.WriterC
 	connection := Connection{
 		reader:   kafka.NewReader(*readerConfig),
 		writer:   kafka.NewWriter(*writerConfig),
-		handlers: make(map[string]func([]byte)),
+		handlers: make(map[string]func([]byte, string)),
 	}
 
 	return &connection
@@ -55,7 +55,7 @@ func (connection *Connection) Serve(ctx context.Context) error {
 		if err != nil {
 			log.Println(err)
 		}
-		connection.handle(responseMessage.Type, data)
+		connection.handle(responseMessage.Type, responseMessage.Id, data)
 	}
 }
 

@@ -17,7 +17,7 @@ type TripService struct {
 	connection *connection.Connection
 }
 
-func (service *TripService) acceptTrip(message []byte) {
+func (service *TripService) acceptTrip(message []byte, id string) {
 	var responseMessage model.AcceptTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
@@ -36,7 +36,7 @@ func (service *TripService) acceptTrip(message []byte) {
 		log.Fatal(err)
 	}
 	err = service.connection.Write(context.Background(), []byte(responseMessage.TripID+"DRIVER FOUND"), model.OutboundMessage{
-		ID:              responseMessage.TripID,
+		ID:              id,
 		Source:          "/trip",
 		Type:            "trip.event.accepted",
 		DataContentType: "application/json",
@@ -50,7 +50,7 @@ func (service *TripService) acceptTrip(message []byte) {
 		log.Fatal(err)
 	}
 }
-func (service *TripService) cancelTrip(message []byte) {
+func (service *TripService) cancelTrip(message []byte, id string) {
 	var responseMessage model.CancelTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
@@ -70,7 +70,7 @@ func (service *TripService) cancelTrip(message []byte) {
 			Reason:      responseMessage.Reason,
 		})
 	err = service.connection.Write(context.Background(), []byte(responseMessage.TripID+"DRIVER FOUND"), model.OutboundMessage{
-		ID:              responseMessage.TripID,
+		ID:              id,
 		Source:          "/trip",
 		Type:            "trip.event.canceled",
 		DataContentType: "application/json",
@@ -83,7 +83,7 @@ func (service *TripService) cancelTrip(message []byte) {
 		log.Fatal(err)
 	}
 }
-func (service *TripService) createTrip(message []byte) {
+func (service *TripService) createTrip(message []byte, id string) {
 	var responseMessage model.CreatTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
@@ -110,7 +110,7 @@ func (service *TripService) createTrip(message []byte) {
 		log.Fatalln(err)
 	}
 	err = service.connection.Write(context.Background(), []byte(tripId+"CREATED"), model.OutboundMessage{
-		ID:              offer.Id,
+		ID:              id,
 		Source:          "/trip",
 		Type:            "trip.event.created",
 		DataContentType: "application/json",
@@ -128,7 +128,7 @@ func (service *TripService) createTrip(message []byte) {
 		log.Fatal(err)
 	}
 }
-func (service *TripService) startTrip(message []byte) {
+func (service *TripService) startTrip(message []byte, id string) {
 	var responseMessage model.StartTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
@@ -143,7 +143,7 @@ func (service *TripService) startTrip(message []byte) {
 			CurrentStage: "STARTED",
 		})
 	err = service.connection.Write(context.Background(), []byte(responseMessage.TripID+"STARTED"), model.OutboundMessage{
-		ID:              responseMessage.TripID,
+		ID:              id,
 		Source:          "/trip",
 		Type:            "trip.event.started",
 		DataContentType: "application/json",
@@ -156,7 +156,7 @@ func (service *TripService) startTrip(message []byte) {
 		log.Fatal(err)
 	}
 }
-func (service *TripService) endTrip(message []byte) {
+func (service *TripService) endTrip(message []byte, id string) {
 	var responseMessage model.EndTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
@@ -176,7 +176,7 @@ func (service *TripService) endTrip(message []byte) {
 	//	})
 	err = service.repo.DeleteStarted(context.Background(), &model.ParamsStarted{Id: responseMessage.TripID})
 	err = service.connection.Write(context.Background(), []byte(responseMessage.TripID+"ENDED"), model.OutboundMessage{
-		ID:              responseMessage.TripID,
+		ID:              id,
 		Source:          "/trip",
 		Type:            "trip.event.ended",
 		DataContentType: "application/json",
