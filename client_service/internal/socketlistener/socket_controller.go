@@ -8,19 +8,13 @@ import (
 	"client_service/internal/socketlistener/publishers"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"sync"
 )
 
-type Clients struct {
-	Clients   map[string]*websocket.Conn
-	ClientsMu sync.Mutex
-}
-
 type SocketController struct {
 	Config     *config.SocketConfig
-	Clients    *Clients
+	Clients    *sync.Map
 	Connector  *Connector
 	Publishers *map[string]*publishers.Publisher
 	server     *http.Server
@@ -29,15 +23,13 @@ type SocketController struct {
 func (s *SocketController) RegisterNewPublisher(key string) *listeners.StatusListener {
 
 	publisher := &publishers.Publisher{
-		Subscribers:      make(map[string]bool),
-		SubscribersMutex: sync.Mutex{},
-		Broadcast:        make(chan models.SocketMessage),
-		Key:              key,
+		Subscribers: sync.Map{},
+		Broadcast:   make(chan models.SocketMessage),
+		Key:         key,
 	}
 
 	listener := &listeners.StatusListener{
-		Clients:   &s.Clients.Clients,
-		ClientsMu: &s.Clients.ClientsMu,
+		Clients:   s.Clients,
 		Publisher: publisher,
 	}
 
@@ -57,11 +49,9 @@ func (s *SocketController) Serve() error {
 
 	for _, pub := range *s.Publishers {
 		listener := listeners.StatusListener{
-			Clients:   &s.Clients.Clients,
-			ClientsMu: &s.Clients.ClientsMu,
+			Clients:   s.Clients,
 			Publisher: pub,
 		}
-
 		go listener.HandleMessages()
 	}
 
@@ -69,18 +59,17 @@ func (s *SocketController) Serve() error {
 }
 
 func NewSocketController(config *config.SocketConfig, tripService service.TripService) (*SocketController, error) {
-	clients := &Clients{Clients: make(map[string]*websocket.Conn)}
+	clients := sync.Map{}
 	publisher := publishers.NewPublisher("status")
 	publishers := make(map[string]*(publishers.Publisher))
 	publishers["status"] = publisher
 	return &SocketController{
 		Config:     config,
-		Clients:    clients,
+		Clients:    &clients,
 		Publishers: &publishers,
 		Connector: &Connector{
 			TripService: tripService,
-			Clients:     clients.Clients,
-			ClientsMu:   clients.ClientsMu,
+			Clients:     &clients,
 			Publishers:  &publishers,
 		},
 	}, nil

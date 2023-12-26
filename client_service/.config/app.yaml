@@ -7,7 +7,7 @@ http:
   offering_address: "http://offering:9090"
 socket:
   serve_address: :54321
-  base_path: /
+  base_path: /socket/
 mongo:
   uri: mongodb://localhost:27017
 connection:

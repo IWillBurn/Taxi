@@ -8,7 +8,6 @@ import (
 	"client_service/internal/socketlistener/publishers"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"io/ioutil"
 	"log"
@@ -64,7 +63,7 @@ func (tripService *DefaultTripService) CreateTrip(offerId string) error {
 		Price:    response.Price,
 		Status:   "",
 	}
-	log.Println(response)
+
 	err = (tripService.DataBaseController).AddTrip(trip)
 	if err != nil {
 		return err
@@ -93,7 +92,10 @@ func (tripService *DefaultTripService) CancelTrip(tripId string, reason string) 
 }
 
 func (tripService *DefaultTripService) GetTripStatus(clientId string, tripId string, publisher *publishers.Publisher) error {
-	fmt.Println("To publish")
-	publisher.Publish(clientId, "OK")
+	trip, err := tripService.DataBaseController.GetTripByTripId(tripId)
+	if err != nil {
+		return err
+	}
+	publisher.Publish(clientId, trip.Status)
 	return nil
 }

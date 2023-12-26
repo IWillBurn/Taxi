@@ -66,12 +66,12 @@ func New(config *config.Config) (App, error) {
 
 	connection := kafkacontroller.NewConnection(
 		&kafka.ReaderConfig{
-			Topic:   config.Connection.Inbound.Topic,
-			Brokers: config.Connection.Inbound.Brokers,
-		},
-		&kafka.WriterConfig{
 			Topic:   config.Connection.Outbound.Topic,
 			Brokers: config.Connection.Outbound.Brokers,
+		},
+		&kafka.WriterConfig{
+			Topic:   config.Connection.Inbound.Topic,
+			Brokers: config.Connection.Inbound.Brokers,
 		})
 
 	kafkaController := kafkacontroller.NewService(connection)
@@ -85,6 +85,9 @@ func New(config *config.Config) (App, error) {
 	}
 
 	socketController, _ := socketlistener.NewSocketController(&config.Socket, tripService)
+	kafkaController.Repo = DataBaseController
+	kafkaController.StatusPublisher = (*socketController.Publishers)["status"]
+	go kafkaController.Serve(context.Background())
 	a := &app{
 		config:             config,
 		dataBaseController: DataBaseController,

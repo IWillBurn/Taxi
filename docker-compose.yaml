@@ -128,6 +128,7 @@ services:
       - './client_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
       - "8080:8080"
+      - "53242:53242"
 
 
   build_offer:

@@ -7,7 +7,7 @@ import (
 )
 
 type Publisher struct {
-	Subscribers      map[string]bool
+	Subscribers      sync.Map
 	SubscribersMutex sync.Mutex
 	Broadcast        chan models.SocketMessage
 	Key              string
@@ -27,7 +27,7 @@ func (p *Publisher) Publish(to string, message interface{}) {
 
 func NewPublisher(key string) *Publisher {
 	publisher := Publisher{
-		Subscribers: make(map[string]bool),
+		Subscribers: sync.Map{},
 		Broadcast:   make(chan models.SocketMessage),
 		Key:         key,
 	}

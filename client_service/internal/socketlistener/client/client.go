@@ -19,7 +19,7 @@ func main() {
 	u := "ws://localhost:53242/"
 	log.Printf("Connecting to %s", u)
 	header := http.Header{}
-	header.Add("client_id", "client_1")
+	header.Add("user_id", "client_1")
 	c, _, err := websocket.DefaultDialer.Dial(u, header)
 	if err != nil {
 		log.Fatal("dial:", err)
@@ -40,22 +40,24 @@ func main() {
 			fmt.Printf("Received message: %s\n", message)
 		}
 	}()
-
+	tripId := "1"
 	// Горутина для отправки сообщений на сервер
 	go func() {
 		defer close(done)
 		for {
 			select {
 			case <-time.Tick(5 * time.Second):
-				data := make(map[string]string)
-				data["trip_id"] = "123123123"
-				request := &socketrequests.SocketRequest{
-					Key:  "status",
-					Data: data,
-				}
-				err := c.WriteJSON(request)
-				if err != nil {
-					return
+				if tripId != "" {
+					data := make(map[string]string)
+					data["trip_id"] = tripId
+					request := &socketrequests.SocketRequest{
+						Key:  "status",
+						Data: data,
+					}
+					err := c.WriteJSON(request)
+					if err != nil {
+						return
+					}
 				}
 			}
 		}

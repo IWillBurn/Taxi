@@ -13,7 +13,7 @@ const (
 	DefaultShutdownTimeout    = 20 * time.Second
 	DefaultBasePath           = "/"
 	DefaultSocketPath         = "/"
-	DefaultSocketServeAddress = "localhost:53242"
+	DefaultSocketServeAddress = ":53242"
 	DefaultURI                = "mongodb://localhost:27017"
 )
 

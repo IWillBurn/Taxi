@@ -94,7 +94,7 @@ func (service *TripService) createTrip(message []byte) {
 			OfferId:      responseMessage.OfferID,
 			CurrentStage: "CREATED",
 		})
-	resp, err := http.Get(fmt.Sprintf("http://offering:8080/offers/%s", responseMessage.OfferID))
+	resp, err := http.Get(fmt.Sprintf("http://offering:9090/offers/%s", responseMessage.OfferID))
 	if err != nil {
 		log.Fatalln(err)
 	}
