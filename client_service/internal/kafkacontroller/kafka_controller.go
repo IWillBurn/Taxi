@@ -99,6 +99,8 @@ func NewService(connection *Connection, metrics *metrics.Metrics) *KafkaControll
 		Connection: connection,
 		metrics:    metrics,
 	}
+
+	k.metrics.Serve()
 	connection.AddHandler("trip.event.created", k.createTrip)
 	connection.AddHandler("trip.event.accept", k.acceptTrip)
 	connection.AddHandler("trip.event.cancel", k.cancelTrip)
@@ -107,7 +109,6 @@ func NewService(connection *Connection, metrics *metrics.Metrics) *KafkaControll
 	return k
 }
 func (kafkaController *KafkaController) Serve(ctx context.Context) error {
-	kafkaController.metrics.Serve()
 	err := kafkaController.Connection.Serve(ctx)
 	if err != nil {
 		return err

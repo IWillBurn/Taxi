@@ -91,7 +91,7 @@ func (service *TripService) createTrip(message []byte) {
 	}
 	tripId, err := service.repo.CreateStarted(context.Background(),
 		&model.TripStarted{
-			OfferId:      responseMessage.OfferID,
+			OfferId:      "OfferID",
 			CurrentStage: "CREATED",
 		})
 	resp, err := http.Get(fmt.Sprintf("http://offering:9090/offers/%s", responseMessage.OfferID))
