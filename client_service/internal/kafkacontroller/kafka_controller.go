@@ -38,7 +38,7 @@ func (kafkaController *KafkaController) updateStatus(message []byte, status stri
 }
 
 func (kafkaController *KafkaController) acceptTrip(message []byte) {
-	kafkaController.metrics.InTheQueueCounter.Dec()
+	kafkaController.metrics.InTheQueueCounter.Inc()
 	kafkaController.updateStatus(message, "DRIVER_FOUND")
 }
 func (kafkaController *KafkaController) cancelTrip(message []byte) {
@@ -53,7 +53,7 @@ func (kafkaController *KafkaController) cancelTrip(message []byte) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if trip.Status == "DRIVER_SEARCH" {
+	if trip.Status == "DRIVER_FOUND" {
 		kafkaController.metrics.InTheQueueCounter.Dec()
 	}
 	kafkaController.updateStatus(message, "CANCELED")
@@ -86,6 +86,7 @@ func (kafkaController *KafkaController) createTrip(message []byte) {
 	kafkaController.StatusPublisher.Publish(trip.ClientId, data)
 }
 func (kafkaController *KafkaController) startTrip(message []byte) {
+	kafkaController.metrics.InTheQueueCounter.Dec()
 	kafkaController.updateStatus(message, "STARTED")
 }
 func (kafkaController *KafkaController) endTrip(message []byte) {
@@ -102,10 +103,10 @@ func NewService(connection *Connection, metrics *metrics.Metrics) *KafkaControll
 
 	k.metrics.Serve()
 	connection.AddHandler("trip.event.created", k.createTrip)
-	connection.AddHandler("trip.event.accept", k.acceptTrip)
-	connection.AddHandler("trip.event.cancel", k.cancelTrip)
-	connection.AddHandler("trip.event.end", k.endTrip)
-	connection.AddHandler("trip.event.start", k.startTrip)
+	connection.AddHandler("trip.event.accepted", k.acceptTrip)
+	connection.AddHandler("trip.event.canceled", k.cancelTrip)
+	connection.AddHandler("trip.event.ended", k.endTrip)
+	connection.AddHandler("trip.event.started", k.startTrip)
 	return k
 }
 func (kafkaController *KafkaController) Serve(ctx context.Context) error {
