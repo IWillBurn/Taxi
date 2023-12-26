@@ -60,27 +60,35 @@ func (a *app) Shutdown() {
 func New(config *config.Config) (App, error) {
 
 	DataBaseController := &repo.MongoDB{Config: &config.Mongo}
-	go DataBaseController.Serve()
-	tripService := &service.DefaultTripService{
-		KafkaController:     nil,
-		OfferingServiceHost: "",
-		DataBaseController:  DataBaseController,
+	err := DataBaseController.Serve()
+	if err != nil {
+		return nil, err
 	}
 
 	connection := kafkacontroller.NewConnection(
 		&kafka.ReaderConfig{
-			Topic:   config.Connection.Inbound.Topic,
-			Brokers: config.Connection.Inbound.Brokers,
-		},
-		&kafka.WriterConfig{
 			Topic:   config.Connection.Outbound.Topic,
 			Brokers: config.Connection.Outbound.Brokers,
+		},
+		&kafka.WriterConfig{
+			Topic:   config.Connection.Inbound.Topic,
+			Brokers: config.Connection.Inbound.Brokers,
 		})
 
 	kafkaController := kafkacontroller.NewService(connection)
 	go kafkaController.Serve(context.Background())
 
+	tripService := &service.DefaultTripService{
+		KafkaController:     kafkaController,
+		OfferingServiceHost: config.HTTP.OfferingAddress,
+		DataBaseController:  DataBaseController,
+		Client:              http.Client{},
+	}
+
 	socketController, _ := socketlistener.NewSocketController(&config.Socket, tripService)
+	kafkaController.Repo = DataBaseController
+	kafkaController.StatusPublisher = (*socketController.Publishers)["status"]
+	go kafkaController.Serve(context.Background())
 	a := &app{
 		config:             config,
 		dataBaseController: DataBaseController,

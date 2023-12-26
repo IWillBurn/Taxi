@@ -11,8 +11,8 @@ import (
 )
 
 type KafkaController struct {
-	repo            repo.DataBaseController
-	statusPublisher *publishers.Publisher
+	Repo            repo.DataBaseController
+	StatusPublisher *publishers.Publisher
 	Connection      *Connection
 
 	metrics *metrics.Metrics
@@ -24,17 +24,17 @@ func (kafkaController *KafkaController) updateStatus(message []byte, status stri
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = kafkaController.repo.ChangeTripByOfferId(responseMessage.TripId, "status", status)
+	err = kafkaController.Repo.ChangeTripByOfferId(responseMessage.TripId, "status", status)
 	if err != nil {
 		return
 	}
-	trip, err := kafkaController.repo.GetTripByTripId(responseMessage.TripId)
+	trip, err := kafkaController.Repo.GetTripByTripId(responseMessage.TripId)
 	if err != nil {
 		return
 	}
 	data := make(map[string]string)
 	data["status"] = status
-	kafkaController.statusPublisher.Publish(trip.ClientId, data)
+	kafkaController.StatusPublisher.Publish(trip.ClientId, data)
 }
 
 func (kafkaController *KafkaController) acceptTrip(message []byte) {
@@ -59,28 +59,31 @@ func (kafkaController *KafkaController) cancelTrip(message []byte) {
 	kafkaController.updateStatus(message, "CANCELED")
 }
 func (kafkaController *KafkaController) createTrip(message []byte) {
+	log.Println("GOT IT!")
 	var responseMessage models.EventCreateTrip
 	err := json.Unmarshal(message, &responseMessage)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = kafkaController.repo.ChangeTripByOfferId(responseMessage.OfferId, "status", responseMessage.Status)
+	err = kafkaController.Repo.ChangeTripByOfferId(responseMessage.OfferId, "status", responseMessage.Status)
 	if err != nil {
 		return
 	}
-	err = kafkaController.repo.ChangeTripByOfferId(responseMessage.OfferId, "trip_id", responseMessage.TripId)
+	err = kafkaController.Repo.ChangeTripByOfferId(responseMessage.OfferId, "trip_id", responseMessage.TripId)
 	if err != nil {
 		return
 	}
 
-	trip, err := kafkaController.repo.GetTripByTripId(responseMessage.TripId)
+	trip, err := kafkaController.Repo.GetTripByTripId(responseMessage.TripId)
 	if err != nil {
 		return
 	}
 	data := make(map[string]string)
 	data["status"] = responseMessage.Status
+
 	kafkaController.metrics.CreatedOrdersCounter.Inc()
-	kafkaController.statusPublisher.Publish(trip.ClientId, data)
+	log.Println(responseMessage.TripId)
+	kafkaController.StatusPublisher.Publish(trip.ClientId, data)
 }
 func (kafkaController *KafkaController) startTrip(message []byte) {
 	kafkaController.updateStatus(message, "STARTED")
@@ -95,6 +98,7 @@ func NewService(connection *Connection) *KafkaController {
 	k := &KafkaController{
 		Connection: connection,
 	}
+	connection.AddHandler("trip.event.created", k.createTrip)
 	connection.AddHandler("trip.event.accept", k.acceptTrip)
 	connection.AddHandler("trip.event.cancel", k.cancelTrip)
 	connection.AddHandler("trip.event.end", k.endTrip)

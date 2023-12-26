@@ -8,7 +8,6 @@ import (
 	"client_service/internal/socketlistener/publishers"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"io/ioutil"
 	"log"
@@ -20,7 +19,7 @@ type DefaultTripService struct {
 	KafkaController     *kafkacontroller.KafkaController
 	DataBaseController  repo.DataBaseController
 	OfferingServiceHost string
-	client              http.Client
+	Client              http.Client
 }
 
 func (tripService *DefaultTripService) CreateTrip(offerId string) error {
@@ -37,10 +36,10 @@ func (tripService *DefaultTripService) CreateTrip(offerId string) error {
 			},
 		})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
-	resp, err := tripService.client.Get(tripService.OfferingServiceHost + "/offers/" + offerId)
+	log.Println(tripService.OfferingServiceHost + "/offers/" + offerId)
+	resp, err := tripService.Client.Get(tripService.OfferingServiceHost + "/offers/" + offerId)
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,10 @@ func (tripService *DefaultTripService) CancelTrip(tripId string, reason string) 
 }
 
 func (tripService *DefaultTripService) GetTripStatus(clientId string, tripId string, publisher *publishers.Publisher) error {
-	fmt.Println("To publish")
-	publisher.Publish(clientId, "OK")
+	trip, err := tripService.DataBaseController.GetTripByTripId(tripId)
+	if err != nil {
+		return err
+	}
+	publisher.Publish(clientId, trip.Status)
 	return nil
 }

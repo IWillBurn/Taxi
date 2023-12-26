@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.1"
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -59,13 +59,6 @@ services:
       - zookeeper
 
 
-  build_trip:
-    image: builder:latest
-    build:
-      context: "."
-      dockerfile: "trip_service/.docker/build.Dockerfile"
-
-
   database:
     image: postgres
     restart: always
@@ -82,6 +75,24 @@ services:
       retries: 5
 
 
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - ./data:/data/db
+
+
+  build_trip:
+    image: builder:latest
+    build:
+      context: "."
+      dockerfile: "trip_service/.docker/build.Dockerfile"
+
   trip_service:
     build:
       context: "."
@@ -96,7 +107,6 @@ services:
         condition: service_healthy
     volumes:
       - './trip_service/migrations/:/migrations'
-
 
   build_client:
     image: build:develop
@@ -118,16 +128,7 @@ services:
       - './client_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
       - "8080:8080"
-  mongodb:
-    image: mongo
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-    volumes:
-      - ./data:/data/db
+      - "53242:53242"
 
 
   build_offer:
@@ -135,6 +136,9 @@ services:
     build:
       context: "./offering_service"
       dockerfile: "./.docker/build.Dockerfile"
+    depends_on:
+      client:
+        condition: service_started
 
   offering:
     build:
@@ -147,26 +151,4 @@ services:
     volumes:
       - './offering_service/.config/app.docker.yaml:/app/config.yaml'
     ports:
-      - "8081:8080"
-  prometheus:
-    image: prom/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
-    restart: unless-stopped
-    volumes:
-      - ./deployments/prometheus:/etc/prometheus
-      - prom_data:/deployments/prometheus
-  grafana:
-    image: grafana/grafana
-    ports:
-        - 8083:3000
-    restart: unless-stopped
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=grafana
-    volumes:
-      - ./deployments/grafana:/etc/grafana/provisioning/datasources
-volumes:
-  prom_data:
+      - "9090:9090"
