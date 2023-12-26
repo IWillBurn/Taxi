@@ -9,6 +9,7 @@ import (
 	"offering_service/internal/config"
 	"offering_service/internal/httpadapter/requests"
 	"offering_service/internal/httpadapter/responses"
+	"offering_service/internal/metrics"
 	"offering_service/internal/service"
 )
 
@@ -24,6 +25,7 @@ func (a *Adapter) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.IncreaseOffersCounter()
 	request := &requests.CreateOfferRequest{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(request)
@@ -54,6 +56,8 @@ func (a *Adapter) ParseOffer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		return
 	}
+
+	metrics.IncreaseDecodingRequestsCounter()
 	offerId := chi.URLParam(r, "offer_id")
 
 	data, err := a.SigningService.Decode(offerId)
