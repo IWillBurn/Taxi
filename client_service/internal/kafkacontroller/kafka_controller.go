@@ -8,12 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sync"
 )
 
 type KafkaController struct {
 	Repo            repo.DataBaseController
 	StatusPublisher *publishers.Publisher
 	Connection      *Connection
+	Waiters         sync.Map
 
 	metrics *metrics.Metrics
 }
@@ -24,7 +26,7 @@ func (kafkaController *KafkaController) updateStatus(message []byte, status stri
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = kafkaController.Repo.ChangeTripByOfferId(responseMessage.TripId, "status", status)
+	err = kafkaController.Repo.ChangeTripByTripId(responseMessage.TripId, "status", status)
 	if err != nil {
 		return
 	}
@@ -37,11 +39,11 @@ func (kafkaController *KafkaController) updateStatus(message []byte, status stri
 	kafkaController.StatusPublisher.Publish(trip.ClientId, data)
 }
 
-func (kafkaController *KafkaController) acceptTrip(message []byte) {
+func (kafkaController *KafkaController) acceptTrip(message []byte, id string) {
 	kafkaController.metrics.InTheQueueCounter.Inc()
 	kafkaController.updateStatus(message, "DRIVER_FOUND")
 }
-func (kafkaController *KafkaController) cancelTrip(message []byte) {
+func (kafkaController *KafkaController) cancelTrip(message []byte, id string) {
 	kafkaController.metrics.CanceledTripCounter.Inc()
 
 	var responseMessage models.EventTripStatusUpdate
@@ -58,7 +60,7 @@ func (kafkaController *KafkaController) cancelTrip(message []byte) {
 	}
 	kafkaController.updateStatus(message, "CANCELED")
 }
-func (kafkaController *KafkaController) createTrip(message []byte) {
+func (kafkaController *KafkaController) createTrip(message []byte, id string) {
 	log.Println("GOT IT!")
 	var responseMessage models.EventCreateTrip
 	err := json.Unmarshal(message, &responseMessage)
@@ -84,12 +86,17 @@ func (kafkaController *KafkaController) createTrip(message []byte) {
 	kafkaController.metrics.CreatedOrdersCounter.Inc()
 	log.Println(responseMessage.TripId)
 	kafkaController.StatusPublisher.Publish(trip.ClientId, data)
+	_, ok := kafkaController.Waiters.Load(id)
+	if ok {
+		kafkaController.Waiters.Delete(id)
+		kafkaController.Waiters.Store(id, responseMessage.TripId)
+	}
 }
-func (kafkaController *KafkaController) startTrip(message []byte) {
+func (kafkaController *KafkaController) startTrip(message []byte, id string) {
 	kafkaController.metrics.InTheQueueCounter.Dec()
 	kafkaController.updateStatus(message, "STARTED")
 }
-func (kafkaController *KafkaController) endTrip(message []byte) {
+func (kafkaController *KafkaController) endTrip(message []byte, id string) {
 	kafkaController.metrics.EndedTripCounter.Inc()
 	kafkaController.updateStatus(message, "ENDED")
 }

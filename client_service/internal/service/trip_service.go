@@ -5,7 +5,7 @@ import (
 )
 
 type TripService interface {
-	CreateTrip(offerId string) error
+	CreateTrip(offerId string) (string, error)
 	CancelTrip(tripId string, reason string) error
 	GetTripStatus(clientId string, TripId string, publisher *publishers.Publisher) error
 }

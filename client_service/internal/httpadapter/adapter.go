@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"log"
 	"net/http"
 )
 
@@ -45,14 +44,22 @@ func (a *Adapter) CreateTrip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.TripService.CreateTrip(request.OfferId)
+	tripId, err := a.TripService.CreateTrip(request.OfferId)
+
+	response := make(map[string]string)
+	response["trip_id"] = tripId
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(responseJson))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Printf("OK!")
-	w.WriteHeader(200)
 	return
 }
 
