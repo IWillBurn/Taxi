@@ -49,7 +49,7 @@ func (kafkaController *KafkaController) cancelTrip(message []byte) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	trip, err := kafkaController.repo.GetTripByTripId(responseMessage.TripId)
+	trip, err := kafkaController.Repo.GetTripByTripId(responseMessage.TripId)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,10 +93,11 @@ func (kafkaController *KafkaController) endTrip(message []byte) {
 	kafkaController.updateStatus(message, "ENDED")
 }
 
-func NewService(connection *Connection) *KafkaController {
+func NewService(connection *Connection, metrics *metrics.Metrics) *KafkaController {
 
 	k := &KafkaController{
 		Connection: connection,
+		metrics:    metrics,
 	}
 	connection.AddHandler("trip.event.created", k.createTrip)
 	connection.AddHandler("trip.event.accept", k.acceptTrip)

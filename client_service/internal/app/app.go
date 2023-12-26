@@ -75,7 +75,7 @@ func New(config *config.Config) (App, error) {
 			Brokers: config.Connection.Inbound.Brokers,
 		})
 
-	kafkaController := kafkacontroller.NewService(connection)
+	kafkaController := kafkacontroller.NewService(connection, metrics.NewMetrics())
 	go kafkaController.Serve(context.Background())
 
 	tripService := &service.DefaultTripService{
@@ -94,7 +94,7 @@ func New(config *config.Config) (App, error) {
 		dataBaseController: DataBaseController,
 		tripService:        tripService,
 		socketController:   socketController,
-		httpAdapter:        httpadapter.New(&config.HTTP, DataBaseController, tripService, metrics.NewMetrics()),
+		httpAdapter:        httpadapter.New(&config.HTTP, DataBaseController, tripService),
 		kafkaController:    kafkaController,
 	}
 
