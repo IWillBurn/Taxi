@@ -162,18 +162,18 @@ func (service *TripService) endTrip(message []byte) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	trips, err := service.repo.GetStarted(context.Background(),
-		&model.ParamsStarted{
-			Id: responseMessage.TripID,
-		})
-	if (err != nil) || (len(trips) != 1) {
-		log.Fatal(err)
-	}
-	_, err = service.repo.CreateFinished(context.Background(),
-		&model.TripFinished{
-			TripStarted: trips[0],
-			Successful:  true,
-		})
+	//trips, err := service.repo.GetStarted(context.Background(),
+	//	&model.ParamsStarted{
+	//		Id: responseMessage.TripID,
+	//	})
+	//if (err != nil) || (len(trips) != 1) {
+	//	log.Fatal(err)
+	//}
+	//_, err = service.repo.CreateFinished(context.Background(),
+	//	&model.TripFinished{
+	//		TripStarted: trips[0],
+	//		Successful:  true,
+	//	})
 	err = service.repo.DeleteStarted(context.Background(), &model.ParamsStarted{Id: responseMessage.TripID})
 	err = service.connection.Write(context.Background(), []byte(responseMessage.TripID+"ENDED"), model.OutboundMessage{
 		ID:              responseMessage.TripID,

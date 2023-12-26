@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 	"trip_service/internal/app"
 	"trip_service/internal/app/config"
 	"trip_service/internal/model"
@@ -55,45 +56,45 @@ func main() {
 			}
 			var responseMessage model.OutboundMessage
 			err = json.NewDecoder(strings.NewReader(string(msg.Value))).Decode(&responseMessage)
-			//if responseMessage.Type == "trip.event.created" {
-			//	data, _ := json.Marshal(responseMessage.Data)
-			//	var responseSub model.EventCreatTrip
-			//	_ = json.Unmarshal(data, &responseSub)
-			//	encodeMsg, _ := json.Marshal(model.OutboundMessage{
-			//		ID:              responseMessage.ID,
-			//		Source:          "/driver",
-			//		DataContentType: responseMessage.DataContentType,
-			//		Type:            "trip.command.accept",
-			//		Time:            responseMessage.Time,
-			//		Data: model.AcceptTrip{
-			//			TripID:   responseSub.TripID,
-			//			DriverID: "1",
-			//		}})
-			//	_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
-			//	time.Sleep(10 * time.Second)
-			//	encodeMsg, _ = json.Marshal(model.OutboundMessage{
-			//		ID:              responseMessage.ID,
-			//		Source:          "/driver",
-			//		DataContentType: responseMessage.DataContentType,
-			//		Type:            "trip.command.start",
-			//		Time:            responseMessage.Time,
-			//		Data: model.StartTrip{
-			//			TripID: responseSub.TripID,
-			//		}})
-			//	_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
-			//	time.Sleep(10 * time.Second)
-			//	encodeMsg, _ = json.Marshal(model.OutboundMessage{
-			//		ID:              responseMessage.ID,
-			//		Source:          "/driver",
-			//		DataContentType: responseMessage.DataContentType,
-			//		Type:            "trip.command.end",
-			//		Time:            responseMessage.Time,
-			//		Data: model.EndTrip{
-			//			TripID: responseSub.TripID,
-			//		}})
-			//	_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
-			//	time.Sleep(10 * time.Second)
-			//}
+			if responseMessage.Type == "trip.event.created" {
+				data, _ := json.Marshal(responseMessage.Data)
+				var responseSub model.EventCreatTrip
+				_ = json.Unmarshal(data, &responseSub)
+				encodeMsg, _ := json.Marshal(model.OutboundMessage{
+					ID:              responseMessage.ID,
+					Source:          "/driver",
+					DataContentType: responseMessage.DataContentType,
+					Type:            "trip.command.accept",
+					Time:            responseMessage.Time,
+					Data: model.AcceptTrip{
+						TripID:   responseSub.TripID,
+						DriverID: "1",
+					}})
+				_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
+				time.Sleep(10 * time.Second)
+				encodeMsg, _ = json.Marshal(model.OutboundMessage{
+					ID:              responseMessage.ID,
+					Source:          "/driver",
+					DataContentType: responseMessage.DataContentType,
+					Type:            "trip.command.start",
+					Time:            responseMessage.Time,
+					Data: model.StartTrip{
+						TripID: responseSub.TripID,
+					}})
+				_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
+				time.Sleep(10 * time.Second)
+				encodeMsg, _ = json.Marshal(model.OutboundMessage{
+					ID:              responseMessage.ID,
+					Source:          "/driver",
+					DataContentType: responseMessage.DataContentType,
+					Type:            "trip.command.end",
+					Time:            responseMessage.Time,
+					Data: model.EndTrip{
+						TripID: responseSub.TripID,
+					}})
+				_ = writer.WriteMessages(context.Background(), kafka.Message{Value: encodeMsg})
+				time.Sleep(10 * time.Second)
+			}
 
 		}
 	}()
